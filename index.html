@@ -95,7 +95,7 @@
 
     <div class="p-6 space-y-8 max-w-7xl mx-auto">
       <!-- Overview Section -->
-      <section id="overview" class="space-y-6 scroll-mt-20">
+      <section id="overview" class="space-y-6 scroll-mt-24">
         <!-- KPI Cards -->
         <div id="kpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4"></div>
 
@@ -145,7 +145,7 @@
       </section>
 
       <!-- Complete Catalog Section -->
-      <section id="all-data" class="space-y-4 pt-4 scroll-mt-20">
+      <section id="all-data" class="space-y-4 pt-4 scroll-mt-24">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <h2 class="text-xl font-bold text-white tracking-tight">Catálogo Completo de Indicadores</h2>
@@ -175,7 +175,7 @@
       <!-- Footer Info -->
       <footer class="pt-8 pb-4 border-t border-slate-800/80 text-slate-500 text-xs leading-relaxed flex flex-col sm:flex-row justify-between gap-4 items-center">
         <p>Este painel é uma interface de acompanhamento analítico. Os dados exibidos demonstram integração técnica com APIs financeiras e estatísticas oficiais.</p>
-        <span class="text-slate-400 font-medium">Painel Brasil v2.5 • Shadcn & Tailwind Edition</span>
+        <span class="text-slate-400 font-medium">Painel Brasil v2.6 • Shadcn & Tailwind Edition</span>
       </footer>
     </div>
   </main>
@@ -220,13 +220,23 @@ const demo = {
 "Minério de ferro":["104,8","US$/t","Diária","Mercado"],"Soja":["380,2","US$/t","Diária","Mercado"]
 };
 
+// Helper to create valid HTML element IDs from group names
+function slugify(text) {
+  return text.toString().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '-');
+}
+
 // Render Navigation menu
 const nav = document.getElementById("nav");
-groups.forEach((g,i)=>{
-  let id="g"+i; 
-  nav.innerHTML += `<button onclick="go('${id}')" class="w-full text-left text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2.5"><span>${["◉","◌","▰","♟","▤","$","◎","▱","▥","▣","⌂","🛒","◈","🌐","◇","◍","▦","⚠","▰","♧","ϟ"][i]||"•"}</span><span class="truncate">${g[0]}</span></button>`;
+let navHtml = `<button onclick="go('overview', this)" data-target="overview" class="nav-btn w-full text-left text-xs text-white bg-primary/20 border border-primary/30 px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2.5 mb-1"><span>⌂</span><span>Visão Geral</span></button>`;
+
+groups.forEach((g, i) => {
+  let slug = slugify(g[0]);
+  let icon = ["◉","◌","▰","♟","▤","$","◎","▱","▥","▣","⌂","🛒","◈","🌐","◇","◍","▦","⚠","▰","♧","ϟ"][i] || "•";
+  navHtml += `<button onclick="go('${slug}', this)" data-target="${slug}" class="nav-btn w-full text-left text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2.5"><span>${icon}</span><span class="truncate">${g[0]}</span></button>`;
 });
-nav.innerHTML = `<button onclick="go('overview')" class="w-full text-left text-xs text-white bg-primary/20 border border-primary/30 px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2.5 mb-1"><span>⌂</span><span>Visão Geral</span></button>` + nav.innerHTML;
+nav.innerHTML = navHtml;
 
 function val(name){
   if(demo[name]) return demo[name];
@@ -234,6 +244,7 @@ function val(name){
 }
 
 function makeCard(group, names){
+  let slug = slugify(group);
   let metrics = names.map(n => {
     let v = val(n);
     return `<div class="p-3 rounded-lg bg-slate-900/60 border border-slate-800/70 hover:border-slate-700 transition-colors" data-text="${(group+' '+n).toLowerCase()}">
@@ -243,8 +254,7 @@ function makeCard(group, names){
     </div>`;
   }).join("");
 
-  let cardId = "g" + groups.findIndex(x => x[0] === group);
-  return `<div class="bg-card rounded-xl border border-slate-800 p-5 shadow-sm space-y-4" id="${cardId}">
+  return `<div class="bg-card rounded-xl border border-slate-800 p-5 shadow-sm space-y-4 scroll-mt-24" id="${slug}">
     <div class="flex justify-between items-center border-b border-slate-800/80 pb-3">
       <h2 class="text-sm font-bold text-white tracking-tight">${group}</h2>
       <span class="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-300">${names.length} indic.</span>
@@ -293,7 +303,14 @@ function filterMetrics(){
   });
 }
 
-function go(id){
+function go(id, btn){
+  document.querySelectorAll(".nav-btn").forEach(b => {
+    b.className = "nav-btn w-full text-left text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2.5";
+  });
+  if(btn) {
+    btn.className = "nav-btn w-full text-left text-xs text-white bg-primary/20 border border-primary/30 px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2.5";
+  }
+
   if(id === 'overview') {
     window.scrollTo({top: 0, behavior: 'smooth'});
     document.getElementById("pageTitle").textContent = "Visão Geral do Brasil";
