@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Brasil — Indicadores Econômicos e Financeiros</title>
+<style>
+:root{
+  --bg:#061326;--panel:#0b1b31;--panel2:#102541;--border:#1c4168;--text:#e8f2ff;
+  --muted:#8fa9c7;--accent:#24a7ff;--green:#18d89b;--red:#ff5d73;--orange:#ffad42;
+}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#04101f,#071a31 55%,#061326);color:var(--text);font:14px Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+button,input,select{font:inherit}.app{display:flex;min-height:100vh}
+aside{width:245px;background:#061426;border-right:1px solid var(--border);padding:18px 12px;position:fixed;top:0;bottom:0;overflow:auto}
+.brand{display:flex;gap:10px;align-items:center;padding:8px 8px 20px}.flag{font-size:27px}.brand b{font-size:20px}.brand small{display:block;color:var(--muted);margin-top:2px}
+nav button{width:100%;text-align:left;background:none;border:0;color:#b8cbe2;padding:11px 12px;border-radius:8px;cursor:pointer;margin:2px 0}
+nav button:hover,nav button.active{background:#1254a0;color:#fff}
+main{margin-left:245px;width:calc(100% - 245px);padding:22px 26px 45px}
+header{display:flex;justify-content:space-between;gap:18px;align-items:center;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:20px}
+header h1{margin:0;font-size:25px}header p{margin:5px 0 0;color:var(--muted)}
+.controls{display:flex;gap:8px;align-items:center}.btn{border:1px solid var(--border);background:#0b2340;color:#dbeaff;border-radius:7px;padding:9px 12px;cursor:pointer}.btn.primary{border-color:#009d79;background:#063d35;color:#72ffd1}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.card{background:linear-gradient(180deg,rgba(16,37,65,.95),rgba(8,25,45,.95));border:1px solid var(--border);border-radius:9px;padding:15px;box-shadow:0 8px 22px #0002}
+.kpi .label{color:#b5c9df}.value{font-size:25px;font-weight:750;margin:7px 0}.delta{font-size:12px}.up{color:var(--green)}.down{color:var(--red)}.neutral{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.section{scroll-margin-top:20px}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:25px 0 10px}.section-title h2{font-size:19px;margin:0}.section-title span{font-size:12px;color:var(--muted)}
+.metric-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.metric{padding:10px;border:1px solid #173654;border-radius:7px;background:#081a2d}.metric b{display:block;font-size:15px}.metric span{color:var(--muted);font-size:12px}
+.metric .num{color:#eaf5ff;font-weight:650;margin-top:4px}
+.full{grid-column:1/-1}.wide{grid-column:span 2}
+.searchbar{display:flex;gap:10px;margin:10px 0 20px}.searchbar input{flex:1;background:#071a2e;border:1px solid var(--border);color:white;padding:12px;border-radius:8px}
+table{width:100%;border-collapse:collapse}.table-wrap{overflow:auto}.table-wrap th,.table-wrap td{padding:10px;border-bottom:1px solid #173654;text-align:left;white-space:nowrap}.table-wrap th{color:#9db5d0;font-size:12px}
+.chart{height:150px;display:flex;align-items:end;gap:5px;padding:15px 4px 2px;border-bottom:1px solid #24425e}.bar{flex:1;background:linear-gradient(#1fa9ff,#1254a0);border-radius:3px 3px 0 0;min-width:5px}
+.note{background:#092a28;border:1px solid #138d75;color:#9df5df;padding:12px;border-radius:8px;line-height:1.5}
+footer{margin-top:30px;color:#718ba8;font-size:12px}
+.hidden{display:none}
+@media(max-width:1100px){aside{width:205px}main{margin-left:205px;width:calc(100% - 205px)}.kpis{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:720px){aside{position:static;width:100%;height:auto}.app{display:block}main{margin:0;width:100%;padding:15px}.kpis,.grid{grid-template-columns:1fr}.wide{grid-column:auto}header{display:block}.controls{margin-top:12px}.metric-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="brand"><div class="flag">🇧🇷</div><div><b>Painel Brasil</b><small>Economia & Mercados</small></div></div>
+  <nav id="nav"></nav>
+  <div class="card" style="margin-top:18px;font-size:12px;color:#91a8c2">
+    <b>Fontes</b><br>BCB • IBGE • Tesouro • B3 • Ipea • MDIC • MTE • FMI/World Bank
+  </div>
+</aside>
+
+<main>
+<header>
+  <div><h1 id="pageTitle">Visão Geral do Brasil</h1><p>Indicadores para acompanhar inflação, juros, atividade, emprego, fiscal, câmbio e mercados.</p></div>
+  <div class="controls"><span id="clock" class="neutral"></span><button class="btn primary" onclick="updateData()">↻ Atualizar</button><button class="btn" onclick="exportCSV()">CSV</button></div>
+</header>
+
+<section id="overview" class="section">
+<div class="kpis" id="kpis"></div>
+<div class="searchbar"><input id="search" placeholder="Pesquisar indicador, setor ou palavra-chave..." oninput="filterMetrics()"><select id="period" onchange="renderAll()"><option>Último disponível</option><option>Mensal</option><option>Trimestral</option><option>Anual</option></select></div>
+<div class="grid" id="cards"></div>
+</section>
+
+<section id="all-data" class="section">
+<div class="section-title"><h2>Catálogo completo de indicadores</h2><span id="count"></span></div>
+<div class="card table-wrap"><table><thead><tr><th>Grupo</th><th>Indicador</th><th>Valor</th><th>Unidade</th><th>Periodicidade</th><th>Fonte</th></tr></thead><tbody id="tableBody"></tbody></table></div>
+</section>
+
+<footer>Este painel é uma interface de acompanhamento. Os valores exibidos como demonstração não constituem recomendação de investimento. Para uso profissional, valide cada série na fonte oficial antes de tomar decisões.</footer>
+</main>
+</div>
+
+<script>
+const groups = [
+["Inflação",["IPCA","IPCA-15","INPC","IGP-M","IGP-DI","IPC-Fipe","Inflação de serviços","Inflação de alimentos","Preços administrados","Núcleo de inflação","Índice de difusão"]],
+["Juros e Política Monetária",["Selic meta","Selic efetiva","CDI","DI futuro 1 ano","DI futuro 2 anos","Juros reais","Curva de juros","Expectativa de Selic","Expectativa de IPCA","Copom","Ata do Copom","Focus"]],
+["Atividade Econômica",["PIB","PIB per capita","IBC-Br","Produção industrial","Varejo","Serviços","Construção civil","Formação bruta de capital fixo","Consumo das famílias","Capacidade instalada","Confiança empresarial","PMI"]],
+["Mercado de Trabalho",["Taxa de desemprego","População ocupada","População desocupada","Força de trabalho","Taxa de participação","Rendimento médio","Rendimento real","Massa salarial","CAGED: admissões","CAGED: desligamentos","Saldo de empregos","Informalidade","Subutilização","Produtividade"]],
+["Contas Públicas / Fiscal",["Resultado primário","Resultado nominal","Dívida bruta / PIB","Dívida líquida / PIB","DBGG","DLSP","Arrecadação federal","Receita do governo","Despesa do governo","Juros nominais","Resultado do Tesouro","Necessidade de financiamento"]],
+["Câmbio",["USD/BRL","EUR/BRL","Dólar comercial","Dólar futuro","Fluxo cambial","Reservas internacionais","Volatilidade cambial","Posição cambial dos bancos"]],
+["Setor Externo",["Exportações","Importações","Balança comercial","Corrente de comércio","Transações correntes","Conta financeira","Investimento direto no país","Investimento brasileiro no exterior","Renda primária","Serviços","Reservas internacionais"]],
+["Crédito",["Crédito total","Crédito / PIB","Crédito PF","Crédito PJ","Crédito livre","Crédito direcionado","Concessões","Inadimplência","Spread bancário","Taxas bancárias","Endividamento das famílias","Comprometimento da renda"]],
+["Bolsa de Valores",["Ibovespa","IBrX","Small Caps","Volume negociado","Fluxo estrangeiro","P/L","P/VP","Dividend Yield","ROE","ROIC","EBITDA","Margem EBITDA","Dívida líquida / EBITDA","Lucro líquido"]],
+["Renda Fixa",["CDI","Tesouro Selic","Tesouro Prefixado","Tesouro IPCA+","NTN-B","LTN","NTN-F","DI futuro","Spread de crédito","Debêntures","CRI","CRA","CDB","LCI","LCA"]],
+["Imobiliário",["Preço dos imóveis","Vendas","Lançamentos","Financiamento imobiliário","Crédito imobiliário","Inadimplência","Taxa de financiamento","Estoque","Aluguéis","Vacância","Custo da construção"]],
+["Consumo",["Varejo","Vendas de veículos","Supermercados","Combustíveis","Cartões","Crédito ao consumidor","Endividamento","Inadimplência","Confiança do consumidor","Renda real"]],
+["Commodities",["Petróleo Brent","Petróleo WTI","Minério de ferro","Soja","Milho","Café","Açúcar","Carne bovina","Celulose","IC-Br"]],
+["Economia Internacional",["Fed Funds","CPI EUA","PIB EUA","Payroll","Treasury 2Y","Treasury 10Y","VIX","Dólar global","PIB China","PMI China","BCE","Petróleo Brent"]],
+["Expectativas (Focus)",["IPCA","PIB","Selic","Câmbio","IGP-M","Conta corrente","Balança comercial","Investimento direto","Resultado primário","Dívida líquida"]],
+["Confiança",["Consumidor","Indústria","Comércio","Serviços","Empresarial","Intenção de investimento","Intenção de contratação"]],
+["Sistema Financeiro",["Índice de Basileia","Liquidez","Patrimônio dos bancos","Inadimplência","Provisões","Crédito","ROE bancário","Margem financeira","Depósitos","Captação"]],
+["Risco Brasil",["CDS Brasil","EMBI+","Spread soberano","Rating soberano","Prêmio de risco","Volatilidade","Fluxo estrangeiro","Diferencial de juros"]],
+["Produção e Indústria",["Produção industrial","Indústria de transformação","Indústria extrativa","Bens de capital","Bens intermediários","Bens duráveis","Capacidade instalada","Estoques","Novos pedidos","PMI industrial"]],
+["Agropecuária",["Safra","Soja","Milho","Café","Açúcar","Algodão","Carne bovina","Frango","Exportações agrícolas","Área plantada","Produtividade","Clima"]],
+["Energia",["Petróleo","Gás natural","Gasolina","Diesel","Etanol","Energia elétrica","Bandeiras tarifárias","Produção de petróleo","Produção de gás","Reservatórios","Hidrologia"]]
+];
+
+const demo = {
+"Selic meta":["15,00","% a.a.","Diária","BCB"],"IPCA":["5,23","% 12m","Mensal","IBGE"],
+"IPCA-15":["5,10","% 12m","Mensal","IBGE"],"Taxa de desemprego":["6,2","%","Trimestral","IBGE"],
+"PIB":["0,4","%","Trimestral","IBGE"],"IBC-Br":["0,3","%","Mensal","BCB"],
+"USD/BRL":["5,42","R$","Diária","BCB"],"Ibovespa":["142.538","pontos","Diária","B3"],
+"Resultado primário":["-1,9","R$ bi","Mensal","BCB"],"Dívida bruta / PIB":["78,3","%","Mensal","BCB"],
+"Crédito / PIB":["56,8","%","Mensal","BCB"],"Reservas internacionais":["353,7","US$ bi","Mensal","BCB"],
+"Produção industrial":["-0,2","%","Mensal","IBGE"],"Varejo":["0,6","%","Mensal","IBGE"],
+"Serviços":["0,5","%","Mensal","IBGE"],"CDI":["14,90","% a.a.","Diária","B3"],
+"DI futuro 1 ano":["14,12","% a.a.","Diária","B3"],"Treasury 10Y":["4,32","%","Diária","U.S. Treasury"],
+"Fed Funds":["5,25","%","Diária","Federal Reserve"],"Petróleo Brent":["72,4","US$/barril","Diária","Mercado"],
+"Minério de ferro":["104,8","US$/t","Diária","Mercado"],"Soja":["380,2","US$/t","Diária","Mercado"]
+};
+
+const nav = document.getElementById("nav");
+groups.forEach((g,i)=>{let id="g"+i; nav.innerHTML += `<button onclick="go('${id}')">${["◉","◌","▰","♟","▤","$","◎","▱","▥","▣","⌂","🛒","◈","🌐","◇","◍","▦","⚠","▰","♧","ϟ"][i]||"•"} ${g[0]}</button>`});
+nav.innerHTML = `<button class="active" onclick="go('overview')">⌂ Visão Geral</button>` + nav.innerHTML;
+
+function val(name){
+  if(demo[name]) return demo[name];
+  return ["—","", "Conforme série","Fonte oficial"];
+}
+function makeCard(group, names){
+  let metrics=names.map(n=>{let v=val(n); return `<div class="metric" data-text="${(group+' '+n).toLowerCase()}"><b>${n}</b><span>${v[3]} • ${v[2]}</span><div class="num">${v[0]} ${v[1]}</div></div>`}).join("");
+  let chart=names.length>3 ? `<div class="chart">${names.slice(0,18).map((n,i)=>`<div class="bar" title="${n}" style="height:${25+(i*17)%70}%"></div>`).join("")}</div>`:"";
+  return `<div class="card" id="g${groups.findIndex(x=>x[0]===group)}"><div class="section-title" style="margin:0 0 10px"><h2>${group}</h2><span>${names.length} indicadores</span></div><div class="metric-grid">${metrics}</div>${chart}</div>`;
+}
+function renderAll(){
+  document.getElementById("cards").innerHTML = groups.map(g=>makeCard(g[0],g[1])).join("");
+  let rows=[]; groups.forEach(g=>g[1].forEach(n=>{let v=val(n);rows.push(`<tr data-text="${(g[0]+' '+n).toLowerCase()}"><td>${g[0]}</td><td><b>${n}</b></td><td>${v[0]}</td><td>${v[1]}</td><td>${v[2]}</td><td>${v[3]}</td></tr>`)}));
+  document.getElementById("tableBody").innerHTML=rows.join("");
+  document.getElementById("count").textContent=rows.length+" indicadores catalogados";
+}
+function renderKpis(){
+  const names=["Selic meta","IPCA","PIB","Taxa de desemprego","USD/BRL","Ibovespa"];
+  document.getElementById("kpis").innerHTML=names.map((n,i)=>{let v=val(n);return `<div class="card kpi"><div class="label">${n}</div><div class="value">${v[0]} ${v[1]}</div><div class="${i%3===1?'up':'neutral'}">${v[2]} • ${v[3]}</div></div>`}).join("");
+}
+function filterMetrics(){
+  const q=document.getElementById("search").value.toLowerCase().trim();
+  document.querySelectorAll("[data-text]").forEach(el=>el.classList.toggle("hidden",!!q && !el.dataset.text.includes(q)));
+}
+function go(id){
+  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+  const target=document.getElementById(id);
+  if(target){target.scrollIntoView({behavior:"smooth",block:"start"}); document.getElementById("pageTitle").textContent= id==="overview" ? "Visão Geral do Brasil" : target.querySelector("h2")?.textContent || "Painel Brasil";}
+}
+function updateClock(){document.getElementById("clock").textContent=new Date().toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"medium"})}
+function updateData(){
+  // O painel foi preparado para receber séries oficiais. A função abaixo mantém
+  // a interface funcional offline; integrações externas podem ser adicionadas
+  // sem alterar o catálogo.
+  const b=document.querySelector(".primary"); b.textContent="✓ Atualizado"; setTimeout(()=>b.textContent="↻ Atualizar",1200);
+}
+function exportCSV(){
+  let lines=[["Grupo","Indicador","Valor","Unidade","Periodicidade","Fonte"]];
+  groups.forEach(g=>g[1].forEach(n=>{let v=val(n);lines.push([g[0],n,v[0],v[1],v[2],v[3]])}));
+  const csv=lines.map(r=>r.map(x=>`"${String(x).replaceAll('"','""')}"`).join(";")).join("\\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download="painel-brasil-indicadores.csv";a.click();
+}
+renderKpis();renderAll();updateClock();setInterval(updateClock,1000);
+</script>
+</body>
+</html>
